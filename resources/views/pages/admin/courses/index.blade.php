@@ -11,13 +11,13 @@
     {{-- HEADER --}}
     <div class="flex items-center justify-between">
         <div>
-            <h2 class="text-lg font-semibold text-slate-900">All modules</h2>
-            <p class="text-xs text-slate-500 mt-0.5">
+            <h2 class="text-lg font-semibold text-white">All modules</h2>
+            <p class="text-xs text-slate-300 mt-0.5">
                 {{ $courses->total() }} module{{ $courses->total() === 1 ? '' : 's' }} across both departments
             </p>
         </div>
         <a href="{{ route('admin.courses.create') }}"
-           class="rounded-lg bg-[#1B3A5C] text-white text-sm font-medium px-4 py-2 hover:bg-[#24507A] transition-colors">
+           class="rounded-lg bg-[#C9A227] text-[#0F1B2D] text-sm font-semibold px-4 py-2 hover:bg-[#D9B437] transition-colors">
             New module
         </a>
     </div>

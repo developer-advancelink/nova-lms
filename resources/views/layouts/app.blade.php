@@ -73,7 +73,7 @@
     </style>
 </head>
 
-<body class="min-h-screen font-sans bg-[#E8EEF4] text-slate-900">
+<body class="nova-canvas min-h-screen font-sans text-slate-900">
 
     {{-- NOVA LOADING SCREEN --}}
     <div id="nova-loader">

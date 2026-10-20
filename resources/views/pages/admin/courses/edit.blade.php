@@ -27,11 +27,11 @@
 
     <div class="flex items-center justify-between">
         <div>
-            <h2 class="text-lg font-semibold text-slate-900">{{ $course->code }} — {{ $course->name }}</h2>
-            <p class="text-xs text-slate-500 mt-0.5">{{ $course->departmentEnum()?->label() }}</p>
+            <h2 class="text-lg font-semibold text-white">{{ $course->code }} — {{ $course->name }}</h2>
+            <p class="text-xs text-slate-300 mt-0.5">{{ $course->departmentEnum()?->label() }}</p>
         </div>
         <a href="{{ route('admin.courses.show', $course) }}"
-           class="rounded-lg border border-[#C8D3E0] text-slate-600 text-sm font-medium px-4 py-2 hover:bg-[#E8EEF4] transition-colors">
+           class="rounded-lg border border-white/30 text-white text-sm font-medium px-4 py-2 hover:bg-white/10 transition-colors">
             Manage roster
         </a>
     </div>

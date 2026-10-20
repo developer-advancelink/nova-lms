@@ -51,8 +51,8 @@
     {{-- PAGE HEADER --}}
     <div class="flex items-center justify-between">
         <div>
-            <h2 class="text-lg font-semibold text-slate-900">My Courses</h2>
-            <p class="text-xs text-slate-500 mt-0.5">{{ $enrollments->count() }} course{{ $enrollments->count() === 1 ? '' : 's' }} enrolled</p>
+            <h2 class="text-lg font-semibold text-white">My Courses</h2>
+            <p class="text-xs text-slate-300 mt-0.5">{{ $enrollments->count() }} course{{ $enrollments->count() === 1 ? '' : 's' }} enrolled</p>
         </div>
         <div class="relative">
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

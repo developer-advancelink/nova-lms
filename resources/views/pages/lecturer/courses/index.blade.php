@@ -297,11 +297,11 @@
         {{-- PAGE HEADER --}}
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-lg font-semibold text-slate-900">My Courses</h2>
-                <p class="text-xs text-slate-500 mt-0.5">{{ $courses->count() }} course{{ $courses->count() === 1 ? '' : 's' }} this semester</p>
+                <h2 class="text-lg font-semibold text-white">My Courses</h2>
+                <p class="text-xs text-slate-300 mt-0.5">{{ $courses->count() }} course{{ $courses->count() === 1 ? '' : 's' }} this semester</p>
             </div>
             <button @click="openAssign()"
-                    class="rounded-lg bg-[#1B3A5C] text-white text-sm font-medium px-4 py-2 hover:bg-[#24507A] transition-colors">
+                    class="rounded-lg bg-[#C9A227] text-[#0F1B2D] text-sm font-semibold px-4 py-2 hover:bg-[#D9B437] transition-colors">
                 + New Assignment
             </button>
         </div>

@@ -14,8 +14,8 @@
     @include('pages.admin._flash')
 
     <div>
-        <h2 class="text-lg font-semibold text-slate-900">Create a module</h2>
-        <p class="text-xs text-slate-500 mt-0.5">
+        <h2 class="text-lg font-semibold text-white">Create a module</h2>
+        <p class="text-xs text-slate-300 mt-0.5">
             Pick the department first — only lecturers from that department can own the module.
         </p>
     </div>

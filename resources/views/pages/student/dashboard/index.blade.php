@@ -32,7 +32,7 @@
 
         {{-- COURSE CARDS --}}
         <div>
-            <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-3">Your courses</h3>
+            <h3 class="text-sm font-medium text-slate-200 uppercase tracking-wide mb-3">Your courses</h3>
 
             <div class="grid md:grid-cols-2 gap-4">
 

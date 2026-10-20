@@ -14,8 +14,8 @@
     @include('pages.admin._flash')
 
     <div>
-        <h2 class="text-lg font-semibold text-slate-900">Create an account</h2>
-        <p class="text-xs text-slate-500 mt-0.5">
+        <h2 class="text-lg font-semibold text-white">Create an account</h2>
+        <p class="text-xs text-slate-300 mt-0.5">
             Set an initial password and pass it to the account holder — NOVA does not send email.
         </p>
     </div>

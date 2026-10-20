@@ -22,25 +22,25 @@
     {{-- HEADER --}}
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
-            <h2 class="text-lg font-semibold text-slate-900">All accounts</h2>
-            <p class="text-xs text-slate-500 mt-0.5">
+            <h2 class="text-lg font-semibold text-white">All accounts</h2>
+            <p class="text-xs text-slate-300 mt-0.5">
                 {{ $users->total() }} account{{ $users->total() === 1 ? '' : 's' }} across both departments
             </p>
 
             {{-- Breakdown by role, so the mix is legible before scrolling. --}}
             <div class="flex flex-wrap items-center gap-3 mt-2">
                 @foreach(['student' => 'Students', 'lecturer' => 'Lecturers', 'admin' => 'Administrators'] as $key => $label)
-                    <span class="flex items-center gap-1.5 text-xs text-slate-500">
+                    <span class="flex items-center gap-1.5 text-xs text-slate-300">
                         <span class="w-1.5 h-1.5 rounded-full
                             {{ $key === 'admin' ? 'bg-amber-500' : ($key === 'lecturer' ? 'bg-violet-500' : 'bg-slate-400') }}"></span>
-                        <span class="font-medium text-slate-700">{{ $roleCounts[$key] ?? 0 }}</span>
+                        <span class="font-medium text-white">{{ $roleCounts[$key] ?? 0 }}</span>
                         {{ $label }}
                     </span>
                 @endforeach
             </div>
         </div>
         <a href="{{ route('admin.users.create') }}"
-           class="rounded-lg bg-[#1B3A5C] text-white text-sm font-medium px-4 py-2 hover:bg-[#24507A] transition-colors">
+           class="rounded-lg bg-[#C9A227] text-[#0F1B2D] text-sm font-semibold px-4 py-2 hover:bg-[#D9B437] transition-colors">
             New account
         </a>
     </div>

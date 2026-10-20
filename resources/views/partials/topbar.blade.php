@@ -14,7 +14,7 @@
     };
 @endphp
 
-<header class="h-16 bg-[#E8EEF4] border-b border-[#C8D3E0] flex items-center justify-between gap-2 px-4 sm:px-6 lg:px-8 flex-shrink-0">
+<header class="relative z-30 h-16 bg-white border-b border-slate-200 shadow-[0_1px_2px_rgba(15,27,45,0.04),0_6px_16px_-8px_rgba(15,27,45,0.12)] flex items-center justify-between gap-2 px-4 sm:px-6 lg:px-8 flex-shrink-0">
 
     {{-- LEFT: nav toggle + page title --}}
     <div class="flex items-center gap-3 min-w-0">
@@ -23,7 +23,7 @@
         <button type="button"
                 @click="navOpen = true"
                 aria-label="Open navigation"
-                class="lg:hidden -ml-1 rounded-lg p-2 text-slate-600 hover:bg-[#D0D8E4] hover:text-slate-900 transition-colors">
+                class="lg:hidden -ml-1 rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -44,7 +44,7 @@
             </svg>
             <input type="text"
                    placeholder="Search..."
-                   class="rounded-lg bg-[#E8EEF4] border border-[#C8D3E0] pl-9 pr-3 py-2 text-sm text-slate-700 placeholder:text-slate-400
+                   class="rounded-lg bg-slate-50 border border-slate-200 pl-9 pr-3 py-2 text-sm text-slate-700 placeholder:text-slate-400
                           outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition-all w-48">
         </div>
 
@@ -75,18 +75,18 @@
         @endif
 
         {{-- NOTIFICATIONS --}}
-        <button class="relative rounded-lg p-2 text-slate-500 hover:bg-[#D0D8E4] hover:text-slate-700 transition-colors">
+        <button class="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             @if(($unreadNotifications ?? 0) > 0)
-                <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-[#E8EEF4]"></span>
+                <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white"></span>
             @endif
         </button>
 
         {{-- DIVIDER --}}
-        <div class="hidden sm:block w-px h-6 bg-[#C8D3E0]"></div>
+        <div class="hidden sm:block w-px h-6 bg-slate-200"></div>
 
         {{-- USER — the name and role drop away on phones; the sidebar's user
              card still carries both. --}}

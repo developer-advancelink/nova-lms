@@ -19,7 +19,7 @@
 
     {{-- PER-DEPARTMENT SUMMARY --}}
     <div>
-        <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Departments</p>
+        <p class="text-xs font-semibold text-slate-200 uppercase tracking-widest mb-3">Departments</p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             @foreach($departments as $row)
                 @php $dept = $row['department']; @endphp
@@ -94,11 +94,11 @@
     {{-- QUICK ACTIONS --}}
     <div class="flex gap-3">
         <a href="{{ route('admin.users.create') }}"
-           class="rounded-lg bg-[#1B3A5C] text-white text-sm font-medium px-4 py-2 hover:bg-[#24507A] transition-colors">
+           class="rounded-lg bg-[#C9A227] text-[#0F1B2D] text-sm font-semibold px-4 py-2 hover:bg-[#D9B437] transition-colors">
             Create account
         </a>
         <a href="{{ route('admin.courses.create') }}"
-           class="rounded-lg border border-[#C8D3E0] text-slate-600 text-sm font-medium px-4 py-2 hover:bg-[#E8EEF4] transition-colors">
+           class="rounded-lg border border-white/30 text-white text-sm font-medium px-4 py-2 hover:bg-white/10 transition-colors">
             Create module
         </a>
     </div>
