@@ -72,7 +72,7 @@
         </div>
 
         {{-- PENDING SUBMISSIONS --}}
-        <div class="rounded-2xl bg-white shadow-sm overflow-hidden">
+        <div class="rounded-2xl bg-white shadow-sm overflow-x-auto">
 
             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <h3 class="text-base font-semibold text-slate-900">Pending submissions</h3>
@@ -86,7 +86,7 @@
             <div class="divide-y divide-slate-100">
 
                 @forelse($pendingSubmissions as $submission)
-                    <div class="grid grid-cols-12 px-6 py-3.5 items-center text-sm hover:bg-slate-50 transition-colors">
+                    <div class="grid grid-cols-12 min-w-[620px] px-6 py-3.5 items-center text-sm hover:bg-slate-50 transition-colors">
                         <div class="col-span-4 font-medium text-slate-800">{{ $submission->user->name }}</div>
                         <div class="col-span-4 text-slate-600">{{ $submission->assignment->title }}</div>
                         <div class="col-span-2 text-xs text-slate-400">{{ $submission->assignment->course->code }}</div>

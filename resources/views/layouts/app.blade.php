@@ -88,8 +88,47 @@
         </div>
     </div>
 
+{{--
+    Shell scope. navOpen drives the off-canvas sidebar on phones and tablets;
+    the sidebar and topbar are both inside this element, so each reads it from
+    the parent Alpine scope. On lg and up the sidebar is always visible and
+    navOpen is irrelevant.
+--}}
+<div x-data="{ navOpen: false }" @keydown.escape.window="navOpen = false">
+
+    {{-- MOBILE NAV BACKDROP --}}
+    <div x-cloak
+         x-show="navOpen"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click="navOpen = false"
+         class="fixed inset-0 bg-[#0F1B2D] bg-opacity-60 z-40 lg:hidden"
+         style="display:none;"></div>
+
     {{-- SIDEBAR --}}
-    @if(Auth::check() && Auth::user()->role === 'lecturer')
+    @if(Auth::check() && Auth::user()->role === 'admin')
+        {{-- Admin manages modules on its own screens, so no course drawer. --}}
+        @include('partials.sidebar', [
+            'role' => 'admin',
+            'basePath' => '/admin',
+            'courses' => collect(),
+            'showCoursesDrawer' => false,
+            'navGroups' => [
+                'Oversight' => [
+                    ['label' => 'Dashboard', 'href' => '/admin/dashboard', 'active' => request()->is('admin/dashboard')],
+                    ['label' => 'Accounts',  'href' => '/admin/users',     'active' => request()->is('admin/users*')],
+                    ['label' => 'Modules',   'href' => '/admin/courses',   'active' => request()->is('admin/courses*')],
+                ],
+                'System' => [
+                    ['label' => 'Profile', 'href' => '/admin/account', 'active' => request()->is('admin/account*')],
+                ],
+            ],
+        ])
+    @elseif(Auth::check() && Auth::user()->role === 'lecturer')
         @include('partials.sidebar', [
             'role' => 'lecturer',
             'basePath' => '/lecturer',
@@ -104,10 +143,18 @@
     @endif
 
     {{-- MAIN WRAPPER --}}
-    <div class="ml-64 min-h-screen flex flex-col">
+    <div class="ml-0 lg:ml-56 min-h-screen flex flex-col">
 
         {{-- TOPBAR --}}
-        @if(Auth::check() && Auth::user()->role === 'lecturer')
+        @if(Auth::check() && Auth::user()->role === 'admin')
+            @include('partials.topbar', [
+                'role' => 'admin',
+                'quickActions' => [
+                    ['label' => 'New account', 'href' => '/admin/users/create'],
+                    ['label' => 'New module', 'href' => '/admin/courses/create'],
+                ],
+            ])
+        @elseif(Auth::check() && Auth::user()->role === 'lecturer')
             @include('partials.topbar', [
                 'role' => 'lecturer',
                 'quickActions' => [
@@ -121,7 +168,7 @@
         @endif
 
         {{-- MAIN CONTENT --}}
-        <div class="flex-1 px-8 py-6">
+        <div class="flex-1 px-4 sm:px-6 lg:px-8 py-6">
             @include('partials.main')
         </div>
 
@@ -129,6 +176,8 @@
         @include('partials.footer')
 
     </div>
+
+</div>
 
     {{-- Alpine.js --}}
     <script src="//unpkg.com/alpinejs" defer></script>

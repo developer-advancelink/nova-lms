@@ -319,7 +319,7 @@
             <div class="space-y-4">
                 @forelse($course->assignments as $assignment)
 
-                    <div class="rounded-2xl bg-white border border-[#C8D3E0] overflow-hidden">
+                    <div class="rounded-2xl bg-white border border-[#C8D3E0] overflow-x-auto">
 
                         <div class="px-6 py-3 bg-[#E8EEF4] border-b border-[#C8D3E0] flex items-center justify-between">
                             <p class="text-sm font-semibold text-slate-900">{{ $assignment->title }}</p>
@@ -328,7 +328,7 @@
                             </span>
                         </div>
 
-                        <div class="grid grid-cols-12 px-6 py-3 text-[10px] font-semibold text-slate-400 uppercase tracking-widest bg-[#E8EEF4] border-b border-[#C8D3E0]">
+                        <div class="grid grid-cols-12 min-w-[620px] px-6 py-3 text-[10px] font-semibold text-slate-400 uppercase tracking-widest bg-[#E8EEF4] border-b border-[#C8D3E0]">
                             <div class="col-span-4">Student</div>
                             <div class="col-span-3">Grade</div>
                             <div class="col-span-5">Feedback</div>
@@ -338,8 +338,8 @@
                             @php $submission = $assignment->submissions->firstWhere('user_id', $student->id); @endphp
 
                             <form method="POST"
-                                  action="/lecturer/assignments/{{ $assignment->id }}/grade/{{ $student->id }}"
-                                  class="grid grid-cols-12 px-6 py-3 items-center text-sm border-b border-[#E8EEF4] last:border-0 gap-2 hover:bg-[#E8EEF4] transition-colors">
+                                  action="/lecturer/courses/{{ $course->id }}/assignments/{{ $assignment->id }}/grade/{{ $student->id }}"
+                                  class="grid grid-cols-12 min-w-[620px] px-6 py-3 items-center text-sm border-b border-[#E8EEF4] last:border-0 gap-2 hover:bg-[#E8EEF4] transition-colors">
                                 @csrf
 
                                 <div class="col-span-4 font-medium text-slate-800">{{ $student->name }}</div>

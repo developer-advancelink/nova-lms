@@ -1,11 +1,19 @@
-{{-- NOVA FOOTER — role-aware --}}
-@php $isAdmin = Auth::check() && Auth::user()->role === 'admin'; @endphp
+{{-- NOVA FOOTER — role-aware
 
-@if(!$isAdmin)
-{{-- MAIN FOOTER — shown to lecturers and students --}}
+     The full three-column footer is marketing material: it belongs on the
+     signed-out pages, not stacked under a student's coursework. Students and
+     admins get the slim copyright bar only; lecturers keep the full version.
+--}}
+@php
+    $role = Auth::check() ? Auth::user()->role : null;
+    $slimFooter = in_array($role, ['admin', 'student'], true);
+@endphp
+
+@if(!$slimFooter)
+{{-- MAIN FOOTER — lecturers --}}
 <footer class="bg-[#0F1B2D] mt-auto">
 
-    <div class="px-10 py-8 grid grid-cols-1 md:grid-cols-3 gap-8 border-b border-[#26344A]">
+    <div class="px-6 sm:px-10 py-8 grid grid-cols-1 md:grid-cols-3 gap-8 border-b border-[#26344A]">
 
         {{-- LEFT — BRANDING + CONTACT --}}
         <div class="space-y-4">
@@ -91,7 +99,7 @@
     </div>
 
     {{-- COPYRIGHT BAR --}}
-    <div class="px-10 py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
+    <div class="px-6 sm:px-10 py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
         <p class="text-[10px] text-[#7C8AA0]">&copy; {{ date('Y') }} AdvancelinkCompany. All Rights Reserved.</p>
         <div class="flex items-center gap-1 text-[#7C8AA0]">
             <a href="/privacy"  class="text-[10px] hover:text-white transition-colors">Privacy Policy</a>
@@ -106,8 +114,8 @@
 
 @else
 
-{{-- ADMIN FOOTER — copyright bar only --}}
-<footer class="bg-[#0F1B2D] border-t border-[#26344A] px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
+{{-- SLIM FOOTER — students and admins --}}
+<footer class="bg-[#0F1B2D] border-t border-[#26344A] mt-auto px-4 sm:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
     <p class="text-[10px] text-[#7C8AA0]">&copy; {{ date('Y') }} AdvancelinkCompany. All Rights Reserved.</p>
     <div class="flex items-center gap-1 text-[#7C8AA0]">
         <a href="/privacy"  class="text-[10px] hover:text-white transition-colors">Privacy Policy</a>

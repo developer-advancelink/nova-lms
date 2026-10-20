@@ -14,18 +14,31 @@
     };
 @endphp
 
-<header class="h-16 bg-[#E8EEF4] border-b border-[#C8D3E0] flex items-center justify-between px-8 flex-shrink-0">
+<header class="h-16 bg-[#E8EEF4] border-b border-[#C8D3E0] flex items-center justify-between gap-2 px-4 sm:px-6 lg:px-8 flex-shrink-0">
 
-    {{-- PAGE TITLE --}}
-    <h1 class="text-lg font-semibold text-slate-900">
-        @yield('page-title', 'Dashboard')
-    </h1>
+    {{-- LEFT: nav toggle + page title --}}
+    <div class="flex items-center gap-3 min-w-0">
+
+        {{-- Only needed where the sidebar is off-canvas. --}}
+        <button type="button"
+                @click="navOpen = true"
+                aria-label="Open navigation"
+                class="lg:hidden -ml-1 rounded-lg p-2 text-slate-600 hover:bg-[#D0D8E4] hover:text-slate-900 transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+
+        <h1 class="text-base sm:text-lg font-semibold text-slate-900 truncate">
+            @yield('page-title', 'Dashboard')
+        </h1>
+    </div>
 
     {{-- RIGHT SIDE --}}
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2 sm:gap-3">
 
-        {{-- SEARCH --}}
-        <div class="relative">
+        {{-- SEARCH — hidden on phones, where it would crowd out the title --}}
+        <div class="relative hidden md:block">
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
             </svg>
@@ -40,9 +53,10 @@
             <div x-data="{ open: false }" class="relative">
                 <button
                     @click="open = !open"
-                    class="rounded-lg bg-[#1B3A5C] text-white px-4 py-2 text-sm font-medium
-                           hover:bg-[#24507A] transition-colors">
-                    + Quick actions
+                    class="rounded-lg bg-[#1B3A5C] text-white px-3 sm:px-4 py-2 text-sm font-medium
+                           whitespace-nowrap hover:bg-[#24507A] transition-colors">
+                    <span class="sm:hidden">+</span>
+                    <span class="hidden sm:inline">+ Quick actions</span>
                 </button>
                 <div
                     x-cloak
@@ -72,14 +86,15 @@
         </button>
 
         {{-- DIVIDER --}}
-        <div class="w-px h-6 bg-[#C8D3E0]"></div>
+        <div class="hidden sm:block w-px h-6 bg-[#C8D3E0]"></div>
 
-        {{-- USER --}}
+        {{-- USER — the name and role drop away on phones; the sidebar's user
+             card still carries both. --}}
         <div class="flex items-center gap-2.5">
             <div class="w-8 h-8 rounded-lg bg-[#C9A227] text-[#0F1B2D] flex items-center justify-center text-xs font-semibold flex-shrink-0">
                 {{ $initials(Auth::user()->name) }}
             </div>
-            <div class="leading-tight">
+            <div class="leading-tight hidden sm:block">
                 <p class="text-sm font-medium text-slate-900">{{ Auth::user()->name }}</p>
                 <p class="text-xs text-slate-400">{{ ucfirst(Auth::user()->role) }}</p>
             </div>

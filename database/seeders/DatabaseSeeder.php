@@ -11,6 +11,8 @@ use App\Models\Assignment;
 use App\Models\Submission;
 use App\Models\Schedule;
 use App\Models\Message;
+use App\Models\CourseMaterial;
+use App\Models\Announcement;
 
 class DatabaseSeeder extends Seeder
 {
@@ -19,21 +21,72 @@ class DatabaseSeeder extends Seeder
         // -------------------------------------------------------
         // USERS
         // -------------------------------------------------------
+        // Admin oversees both departments and therefore belongs to neither.
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@nova.mindef.gov.bn'],
+            [
+                'name'       => 'NOVA Administrator',
+                'password'   => Hash::make('password'),
+                'role'       => 'admin',
+                'department' => null,
+            ]
+        );
+
+        // --- SPT (Sekolah Pertukangan Tentera) ---
+
         $lecturer = User::firstOrCreate(
             ['email' => 'rashid@university.edu'],
             [
-                'name'     => 'Dr. Rashid',
-                'password' => Hash::make('password'),
-                'role'     => 'lecturer',
+                'name'       => 'Dr. Rashid',
+                'password'   => Hash::make('password'),
+                'role'       => 'lecturer',
+                'department' => 'SPT',
             ]
         );
 
         $student = User::firstOrCreate(
             ['email' => 'zuhairah@university.edu'],
             [
-                'name'     => 'Ampuan Zuhairah',
-                'password' => Hash::make('password'),
-                'role'     => 'student',
+                'name'       => 'Ampuan Zuhairah',
+                'password'   => Hash::make('password'),
+                'role'       => 'student',
+                'department' => 'SPT',
+            ]
+        );
+
+        // Same department as Zuhairah but enrolled in NOTHING. Exists so tests
+        // can tell "department isolation works" apart from "enrollment
+        // isolation works" — without this row, passing one looks like passing
+        // both.
+        $sptOutsider = User::firstOrCreate(
+            ['email' => 'amin@nova.edu'],
+            [
+                'name'       => 'Amin Haziq',
+                'password'   => Hash::make('password'),
+                'role'       => 'student',
+                'department' => 'SPT',
+            ]
+        );
+
+        // --- PE (Pusat Evolusi) ---
+
+        $peLecturer = User::firstOrCreate(
+            ['email' => 'hanafi@nova.edu'],
+            [
+                'name'       => 'Dr. Hanafi',
+                'password'   => Hash::make('password'),
+                'role'       => 'lecturer',
+                'department' => 'PE',
+            ]
+        );
+
+        $peStudent = User::firstOrCreate(
+            ['email' => 'nadia@nova.edu'],
+            [
+                'name'       => 'Nadia Syafiqah',
+                'password'   => Hash::make('password'),
+                'role'       => 'student',
+                'department' => 'PE',
             ]
         );
 
@@ -44,6 +97,7 @@ class DatabaseSeeder extends Seeder
             ['code' => 'CS101'],
             [
                 'name'        => 'Web Development',
+                'department'  => 'SPT',
                 'lecturer_id' => $lecturer->id,
                 'start_date'  => '2026-05-20',
                 'end_date'    => '2026-12-20',
@@ -54,7 +108,34 @@ class DatabaseSeeder extends Seeder
             ['code' => 'MGMT101'],
             [
                 'name'        => 'Management for Logistics',
+                'department'  => 'SPT',
                 'lecturer_id' => $lecturer->id,
+                'start_date'  => '2026-05-20',
+                'end_date'    => '2026-12-20',
+            ]
+        );
+
+        // --- PE modules. These are the isolation test targets: nothing in SPT
+        // should ever be able to see or touch them. ---
+
+        $pe101 = Course::firstOrCreate(
+            ['code' => 'PE101'],
+            [
+                'name'        => 'Doctrine & Evolution Studies',
+                'description' => 'Foundations of doctrinal development and institutional evolution.',
+                'department'  => 'PE',
+                'lecturer_id' => $peLecturer->id,
+                'start_date'  => '2026-05-20',
+                'end_date'    => '2026-12-20',
+            ]
+        );
+
+        $pe102 = Course::firstOrCreate(
+            ['code' => 'PE102'],
+            [
+                'name'        => 'Strategic Assessment',
+                'department'  => 'PE',
+                'lecturer_id' => $peLecturer->id,
                 'start_date'  => '2026-05-20',
                 'end_date'    => '2026-12-20',
             ]
@@ -65,6 +146,12 @@ class DatabaseSeeder extends Seeder
         // -------------------------------------------------------
         Enrollment::firstOrCreate(['user_id' => $student->id, 'course_id' => $cs101->id]);
         Enrollment::firstOrCreate(['user_id' => $student->id, 'course_id' => $mgmt101->id]);
+
+        // Nadia is enrolled in PE101 only, so PE102 also covers the
+        // "same department, not enrolled" case on the PE side.
+        Enrollment::firstOrCreate(['user_id' => $peStudent->id, 'course_id' => $pe101->id]);
+
+        // Note: $sptOutsider (Amin) is deliberately enrolled in nothing.
 
         // -------------------------------------------------------
         // ASSIGNMENTS
@@ -205,6 +292,73 @@ class DatabaseSeeder extends Seeder
                 'body'       => 'Hi, your Quiz 1 results are now available. You may view your results in the gradebook. Please reach out if you have any concerns.',
                 'read_at'    => now()->subDays(3),
                 'created_at' => now()->subDays(5),
+            ]
+        );
+
+        // -------------------------------------------------------
+        // PE DEPARTMENT CONTENT
+        // -------------------------------------------------------
+        // PE101 carries a full set of children on purpose. The cross-department
+        // IDOR checks need a real target for every child type — without these
+        // rows an SPT user "failing to reach PE data" proves nothing, because
+        // there would be nothing there to reach.
+
+        $peAssignment = Assignment::firstOrCreate(
+            ['title' => 'Doctrine Review Paper', 'course_id' => $pe101->id],
+            [
+                'description' => 'Critically review one doctrinal shift of the past decade.',
+                'due_date'    => now()->addDays(10),
+            ]
+        );
+
+        Submission::firstOrCreate(
+            ['assignment_id' => $peAssignment->id, 'user_id' => $peStudent->id],
+            [
+                'grade'        => 'A',
+                'feedback'     => 'Excellent synthesis of sources.',
+                'submitted_at' => now()->subDays(2),
+            ]
+        );
+
+        CourseMaterial::firstOrCreate(
+            ['course_id' => $pe101->id, 'title' => 'PE101 Course Handbook'],
+            [
+                'type'     => 'notes',
+                'week'     => '1',
+                'file_url' => null,
+            ]
+        );
+
+        Announcement::firstOrCreate(
+            ['course_id' => $pe101->id, 'title' => 'Welcome to PE101'],
+            [
+                'posted_by' => $peLecturer->id,
+                'body'      => 'Welcome aboard. Please read the handbook before our first session.',
+            ]
+        );
+
+        Schedule::firstOrCreate(
+            ['course_id' => $pe101->id, 'day' => 'Tuesday'],
+            [
+                'title' => 'Doctrine Seminar',
+                'time'  => '09:00:00',
+            ]
+        );
+
+        // A PE-only message thread. An SPT user requesting ?thread=<this id>
+        // must not be able to read it.
+        Message::firstOrCreate(
+            [
+                'sender_id'   => $peLecturer->id,
+                'receiver_id' => $peStudent->id,
+                'subject'     => 'PE101 reading list',
+            ],
+            [
+                'course_id'  => $pe101->id,
+                'parent_id'  => null,
+                'body'       => 'Nadia, the extended reading list for the doctrine seminar is now in the handbook section.',
+                'read_at'    => null,
+                'created_at' => now()->subHours(5),
             ]
         );
     }

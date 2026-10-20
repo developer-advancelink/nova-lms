@@ -10,11 +10,19 @@ class LecturerMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!Auth::check() || Auth::user()->role !== 'lecturer') {
-            if (Auth::check() && Auth::user()->role === 'student') {
-                return redirect('/dashboard');
-            }
-            return redirect('/login');
+        if (! Auth::check()) {
+            return redirect()->guest(route('login'));
+        }
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if (! $user->isLecturer()) {
+            $target = $user->homePath();
+
+            abort_if($request->is(ltrim($target, '/')), 403);
+
+            return redirect($target);
         }
 
         return $next($request);

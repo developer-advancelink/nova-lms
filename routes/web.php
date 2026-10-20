@@ -1,9 +1,14 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Middleware\StudentMiddleware;
-use App\Http\Middleware\LecturerMiddleware;
+use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\AccountController;
+use App\Http\Controllers\HelpController;
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\Admin;
+use App\Http\Controllers\Lecturer;
+use App\Http\Controllers\Student;
 
 /*
 |--------------------------------------------------------------------------
@@ -11,280 +16,51 @@ use App\Http\Middleware\LecturerMiddleware;
 |--------------------------------------------------------------------------
 */
 Route::get('/', function () {
-    if (!Auth::check()) return redirect('/login');
-    return Auth::user()->role === 'lecturer'
-        ? redirect('/lecturer/dashboard')
-        : redirect('/dashboard');
+    if (! Auth::check()) {
+        return redirect('/login');
+    }
+
+    // homePath() covers every role. The previous two-way ternary sent admins
+    // to /dashboard, which StudentMiddleware then bounced.
+    return redirect(Auth::user()->homePath());
 });
 
 /*
 |--------------------------------------------------------------------------
-| Inbox data helper
+| Role-neutral landing route
 |--------------------------------------------------------------------------
+| Named 'dashboard' because six Breeze controllers call route('dashboard'),
+| which previously threw RouteNotFoundException — no route had that name.
+| Laravel's `guest` middleware also falls back to a route NAMED dashboard
+| before matching one by URI, so this is what stops an authenticated admin
+| ping-ponging between /login and /dashboard.
 */
-$inboxData = function () {
-    /** @var \App\Models\User $user */
-    $user = Auth::user();
-
-    $threads = \App\Models\Message::threads()
-        ->where(function ($q) use ($user) {
-            $q->where('sender_id', $user->id)
-              ->orWhere('receiver_id', $user->id);
-        })
-        ->with(['sender', 'receiver', 'course', 'replies.sender'])
-        ->orderByDesc('created_at')
-        ->get();
-
-    $activeThread = null;
-    if (request()->has('thread')) {
-        $activeThread = \App\Models\Message::with(['sender', 'receiver', 'course', 'replies.sender'])
-            ->find(request('thread'));
-
-        if ($activeThread && $activeThread->receiver_id === $user->id && is_null($activeThread->read_at)) {
-            $activeThread->update(['read_at' => now()]);
-        }
-    }
-
-    return compact('threads', 'activeThread');
-};
-
-/*
-|--------------------------------------------------------------------------
-| Sidebar course helpers
-|--------------------------------------------------------------------------
-*/
-$enrolledCoursesForUser = function () {
-    return \App\Models\Enrollment::where('user_id', Auth::id())
-        ->with('course')
-        ->get()
-        ->pluck('course');
-};
-
-$lecturerCoursesForUser = function () {
-    return \App\Models\Course::where('lecturer_id', Auth::id())
-        ->with('students')
-        ->orderBy('start_date')
-        ->get();
-};
-
-/*
-|--------------------------------------------------------------------------
-| Shared password validation rules
-|--------------------------------------------------------------------------
-*/
-$passwordRules = function () {
-    /** @var \App\Models\User $user */
-    $user = Auth::user();
-    return [
-        'required',
-        'min:12',
-        'confirmed',
-        'regex:/[A-Z]/',
-        'regex:/[a-z]/',
-        'regex:/[0-9]/',
-        'regex:/[^A-Za-z0-9]/',
-        function ($attribute, $value, $fail) use ($user) {
-            $nameParts = array_filter(explode(' ', strtolower($user->name)));
-            foreach ($nameParts as $part) {
-                if (strlen($part) > 2 && str_contains(strtolower($value), $part)) {
-                    $fail('Password must not contain your name.');
-                    return;
-                }
-            }
-        },
-    ];
-};
-
-$passwordMessages = [
-    'password.min'       => 'Password must be at least 12 characters.',
-    'password.regex'     => 'Password must include uppercase, lowercase, a number, and a symbol.',
-    'password.confirmed' => 'Passwords do not match.',
-];
+Route::get('/home', fn () => redirect(Auth::user()->homePath()))
+    ->middleware('auth')
+    ->name('dashboard');
 
 /*
 |--------------------------------------------------------------------------
 | Student Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware([StudentMiddleware::class])->group(function () use ($inboxData, $enrolledCoursesForUser, $passwordRules, $passwordMessages) {
+Route::middleware(['auth', 'student'])->group(function () {
 
-    Route::get('/dashboard', function () use ($enrolledCoursesForUser) {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        $enrolledCourses = $enrolledCoursesForUser();
-        $courseIds = $enrolledCourses->pluck('id');
+    Route::get('/dashboard', Student\DashboardController::class)->name('student.dashboard');
 
-        $pendingAssignments = \App\Models\Assignment::whereIn('course_id', $courseIds)
-            ->whereDoesntHave('submissions', fn($q) => $q->where('user_id', $user->id))
-            ->orderBy('due_date')
-            ->with('course')
-            ->get();
+    Route::get('/courses', [Student\CourseController::class, 'index']);
+    Route::post('/courses/{id}/star', [Student\CourseController::class, 'star']);
 
-        $schedules = \App\Models\Schedule::whereIn('course_id', $courseIds)->with('course')->get();
+    // {course} is resolved by Course::resolveRouteBinding(), so a module in
+    // another department — or one in this department the student is not
+    // enrolled in — 404s before the controller runs.
+    Route::get('/courses/{course}', [Student\CourseController::class, 'show']);
 
-        $recentFeedback = \App\Models\Submission::where('user_id', $user->id)
-            ->whereNotNull('feedback')
-            ->with('assignment')
-            ->latest('submitted_at')
-            ->take(3)
-            ->get();
+    Route::get('/calendar', Student\CalendarController::class);
 
-        $courses = $enrolledCourses;
+    Route::get('/inbox', Student\InboxController::class);
 
-        return view('pages.student.dashboard.index', compact(
-            'courses', 'enrolledCourses', 'pendingAssignments', 'schedules', 'recentFeedback'
-        ));
-    })->name('student.dashboard');
-
-    Route::get('/courses', function () use ($enrolledCoursesForUser) {
-        $enrollments = \App\Models\Enrollment::where('user_id', Auth::id())
-            ->with('course.lecturer')
-            ->orderByDesc('starred')
-            ->orderBy('created_at')
-            ->get();
-        $enrolledCourses = $enrolledCoursesForUser();
-        return view('pages.student.courses.index', compact('enrollments', 'enrolledCourses'));
-    });
-
-    Route::post('/courses/{id}/star', function ($id) {
-        $enrollment = \App\Models\Enrollment::where('user_id', Auth::id())
-            ->where('course_id', $id)
-            ->firstOrFail();
-        $enrollment->update(['starred' => !$enrollment->starred]);
-        return response()->json(['starred' => $enrollment->starred]);
-    });
-
-    Route::get('/courses/{id}', function ($id) use ($enrolledCoursesForUser) {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        $course = \App\Models\Course::with([
-            'lecturer', 'materials', 'assignments', 'announcements.poster', 'students',
-        ])->findOrFail($id);
-
-        $submissions = \App\Models\Submission::where('user_id', $user->id)
-            ->whereHas('assignment', fn($q) => $q->where('course_id', $id))
-            ->with('assignment')
-            ->get();
-
-        $enrolledCourses = $enrolledCoursesForUser();
-        return view('pages.student.courses.show', compact('course', 'submissions', 'enrolledCourses'));
-    });
-
-    Route::get('/calendar', function () use ($enrolledCoursesForUser) {
-        $currentMonth = request('month')
-            ? \Carbon\Carbon::createFromFormat('Y-m', request('month'))->startOfMonth()
-            : \Carbon\Carbon::now()->startOfMonth();
-
-        $enrolledCourses = $enrolledCoursesForUser();
-        $courseIds = $enrolledCourses->pluck('id');
-
-        $events = \App\Models\Assignment::whereIn('course_id', $courseIds)
-            ->whereBetween('due_date', [$currentMonth->copy()->startOfMonth(), $currentMonth->copy()->endOfMonth()])
-            ->with('course')->get();
-
-        $upcoming = \App\Models\Assignment::whereIn('course_id', $courseIds)
-            ->where('due_date', '>=', now())
-            ->orderBy('due_date')
-            ->with('course')
-            ->take(5)
-            ->get();
-
-        return view('pages.student.calendar.index', compact('currentMonth', 'events', 'upcoming', 'enrolledCourses'));
-    });
-
-    Route::get('/inbox', function () use ($inboxData, $enrolledCoursesForUser) {
-        $enrolledCourses = $enrolledCoursesForUser();
-        $inboxCourses = $enrolledCourses;
-
-        // Students can message their lecturers
-        $courseIds = $enrolledCourses->pluck('id');
-        $recipients = \App\Models\User::whereIn('id',
-            \App\Models\Course::whereIn('id', $courseIds)->pluck('lecturer_id')
-        )->get();
-
-        return view('pages.student.inbox.index', array_merge($inboxData(), compact('enrolledCourses', 'recipients', 'inboxCourses')));
-    });
-
-    Route::post('/inbox/reply', function () {
-        \App\Models\Message::create([
-            'sender_id'   => Auth::id(),
-            'receiver_id' => request('receiver_id'),
-            'course_id'   => request('course_id') ?: null,
-            'parent_id'   => request('parent_id'),
-            'subject'     => request('subject'),
-            'body'        => request('body'),
-        ]);
-        return redirect()->back();
-    });
-
-    Route::patch('/inbox/messages/{id}', function ($id) {
-        $message = \App\Models\Message::where('id', $id)
-            ->where('sender_id', Auth::id())
-            ->firstOrFail();
-        $message->update(['body' => request('body')]);
-        return response()->json(['success' => true]);
-    });
-
-    Route::delete('/inbox/messages/{id}', function ($id) {
-        $message = \App\Models\Message::where('id', $id)
-            ->where('sender_id', Auth::id())
-            ->firstOrFail();
-        $message->delete();
-        return response()->json(['success' => true]);
-    });
-
-    Route::get('/account', function () use ($enrolledCoursesForUser) {
-        $enrolledCourses = $enrolledCoursesForUser();
-        $courses = $enrolledCourses;
-        return view('pages.student.account.profile', compact('courses', 'enrolledCourses'));
-    });
-
-    Route::patch('/account', function () {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        $user->update([
-            'name'  => request('name'),
-            'email' => request('email'),
-            'bio'   => request('bio'),
-        ]);
-        return redirect()->back()->with('success', 'Profile updated successfully.');
-    });
-
-    Route::get('/account/password', function () use ($enrolledCoursesForUser) {
-        $enrolledCourses = $enrolledCoursesForUser();
-        return view('pages.student.account.password', compact('enrolledCourses'));
-    });
-
-    Route::patch('/account/password', function () use ($passwordRules, $passwordMessages) {
-        request()->validate([
-            'current_password' => ['required'],
-            'password'         => $passwordRules(),
-        ], $passwordMessages);
-
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        if (!\Illuminate\Support\Facades\Hash::check(request('current_password'), $user->password)) {
-            return back()->withErrors(['current_password' => 'The current password is incorrect.']);
-        }
-        $user->update(['password' => \Illuminate\Support\Facades\Hash::make(request('password'))]);
-        return redirect()->back()->with('success', 'Password updated successfully.');
-    });
-
-    Route::get('/account/notifications', function () use ($enrolledCoursesForUser) {
-        $enrolledCourses = $enrolledCoursesForUser();
-        return view('pages.student.account.notifications', compact('enrolledCourses'));
-    });
-
-    Route::get('/account/preferences', function () use ($enrolledCoursesForUser) {
-        $enrolledCourses = $enrolledCoursesForUser();
-        return view('pages.student.account.preferences', compact('enrolledCourses'));
-    });
-
-    Route::get('/help', function () use ($enrolledCoursesForUser) {
-        $enrolledCourses = $enrolledCoursesForUser();
-        return view('pages.shared.help', compact('enrolledCourses'));
-    });
-
+    Route::get('/help', HelpController::class);
 });
 
 /*
@@ -292,269 +68,123 @@ Route::middleware([StudentMiddleware::class])->group(function () use ($inboxData
 | Lecturer Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware([LecturerMiddleware::class])->prefix('lecturer')->group(function () use ($inboxData, $lecturerCoursesForUser, $passwordRules, $passwordMessages) {
+Route::middleware(['auth', 'lecturer'])->prefix('lecturer')->group(function () {
 
-    Route::get('/dashboard', function () use ($lecturerCoursesForUser) {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        $courses = $lecturerCoursesForUser();
-        $courseIds = $courses->pluck('id');
+    Route::get('/dashboard', Lecturer\DashboardController::class)->name('lecturer.dashboard');
 
-        $pendingSubmissions = \App\Models\Submission::whereHas('assignment', fn($q) => $q->whereIn('course_id', $courseIds))
-            ->whereNull('grade')
-            ->with(['user', 'assignment.course'])
-            ->latest('submitted_at')
-            ->take(5)
-            ->get();
+    Route::get('/courses', [Lecturer\CourseController::class, 'index']);
 
-        $schedules = \App\Models\Schedule::whereIn('course_id', $courseIds)
-            ->with('course')
-            ->get()
-            ->map(fn($s) => (object)[
-                'title'    => $s->course->code . ' — ' . $s->title,
-                'subtitle' => $s->day . ', ' . \Carbon\Carbon::parse($s->time)->format('g:i A'),
-            ]);
+    /*
+    |----------------------------------------------------------------------
+    | Module routes — scoped bindings
+    |----------------------------------------------------------------------
+    | {course} resolves through Course::resolveRouteBinding(), so a module the
+    | lecturer does not own (or that belongs to the other department) 404s.
+    | scopeBindings() then resolves {material} / {assignment} THROUGH the
+    | course's own relation, which is what makes it impossible to touch a child
+    | record belonging to a different module.
+    */
+    Route::scopeBindings()->group(function () {
 
-        $upcomingAssignments = \App\Models\Assignment::whereIn('course_id', $courseIds)
-            ->where('due_date', '>=', now())
-            ->orderBy('due_date')
-            ->with('course')
-            ->take(3)
-            ->get()
-            ->map(fn($a) => (object)[
-                'title'    => $a->title . ' Deadline',
-                'subtitle' => $a->due_date->format('D, g:i A'),
-            ]);
+        Route::get('/courses/{course}', [Lecturer\CourseController::class, 'show'])
+            ->can('view', 'course');
 
-        $upcoming = $schedules->concat($upcomingAssignments)->take(5);
+        Route::patch('/courses/{course}', [Lecturer\CourseController::class, 'update'])
+            ->can('update', 'course');
 
-        $recentActivity = \App\Models\Submission::whereHas('assignment', fn($q) => $q->whereIn('course_id', $courseIds))
-            ->with(['user', 'assignment.course'])
-            ->latest('submitted_at')
-            ->take(5)
-            ->get();
+        Route::post('/courses/{course}/materials', [Lecturer\MaterialController::class, 'store'])
+            ->can('update', 'course');
 
-        return view('pages.lecturer.dashboard.index', compact(
-            'courses', 'pendingSubmissions', 'upcoming', 'recentActivity'
-        ));
-    })->name('lecturer.dashboard');
+        Route::delete('/courses/{course}/materials/{material}', [Lecturer\MaterialController::class, 'destroy'])
+            ->can('update', 'course');
 
-    Route::get('/courses', function () use ($lecturerCoursesForUser) {
-        $courses = \App\Models\Course::where('lecturer_id', Auth::id())
-            ->with(['students', 'assignments.submissions'])
-            ->orderBy('start_date')
-            ->get();
+        Route::post('/courses/{course}/assignments', [Lecturer\AssignmentController::class, 'store'])
+            ->can('update', 'course');
 
-        $courseIds = $courses->pluck('id');
+        Route::post('/courses/{course}/announcements', [Lecturer\AnnouncementController::class, 'store'])
+            ->can('update', 'course');
 
-        $assignments = \App\Models\Assignment::whereIn('course_id', $courseIds)
-            ->with(['course.students', 'submissions'])
-            ->orderBy('due_date')
-            ->get();
-
-        return view('pages.lecturer.courses.index', compact('courses', 'assignments'));
+        // {studentId} stays a plain id on purpose — see GradeController.
+        Route::post('/courses/{course}/assignments/{assignment}/grade/{studentId}', [Lecturer\GradeController::class, 'store'])
+            ->can('update', 'course');
     });
 
-    Route::patch('/courses/{id}', function ($id) {
-        $course = \App\Models\Course::findOrFail($id);
-        $course->update([
-            'name'        => request('name'),
-            'description' => request('description'),
-            'start_date'  => request('start_date'),
-            'end_date'    => request('end_date'),
-        ]);
-        return redirect()->back()->with('success', 'Course updated successfully.');
-    });
+    Route::get('/inbox', Lecturer\InboxController::class);
 
-    Route::get('/courses/{id}', function ($id) use ($lecturerCoursesForUser) {
-        $course = \App\Models\Course::with([
-            'lecturer', 'materials', 'assignments.submissions', 'announcements', 'students',
-        ])->findOrFail($id);
-        $courses = $lecturerCoursesForUser();
-        return view('pages.lecturer.courses.show', compact('course', 'courses'));
-    });
+    Route::get('/calendar', Lecturer\CalendarController::class);
 
-    Route::post('/courses/{id}/materials', function ($id) {
-        request()->validate([
-            'title' => ['required', 'string'],
-            'file'  => ['required', 'file', 'mimes:pdf,docx,pptx', 'max:10240'],
-        ]);
-        $path = request()->file('file')->store('materials', 'public');
-        \App\Models\CourseMaterial::create([
-            'course_id' => $id,
-            'title'     => request('title'),
-            'type'      => request('type', 'notes'),
-            'week'      => request('week'),
-            'file_url'  => $path,
-        ]);
-        return redirect()->back()->with('success', 'Module uploaded successfully.');
-    });
-
-    Route::delete('/courses/{courseId}/materials/{materialId}', function ($courseId, $materialId) {
-        $material = \App\Models\CourseMaterial::findOrFail($materialId);
-        if ($material->file_url) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($material->file_url);
-        }
-        $material->delete();
-        return redirect()->back()->with('success', 'Module deleted.');
-    });
-
-    Route::post('/courses/{id}/assignments', function ($id) {
-        request()->validate([
-            'title'    => ['required', 'string'],
-            'due_date' => ['required', 'date'],
-            'file'     => ['nullable', 'file', 'mimes:pdf,docx,pptx', 'max:10240'],
-        ]);
-        \App\Models\Assignment::create([
-            'course_id'   => $id,
-            'title'       => request('title'),
-            'description' => request('description'),
-            'due_date'    => request('due_date'),
-        ]);
-        return redirect()->back()->with('success', 'Assignment created successfully.');
-    });
-
-    Route::post('/courses/{id}/announcements', function ($id) {
-        request()->validate([
-            'title' => ['required', 'string'],
-            'body'  => ['required', 'string'],
-        ]);
-        \App\Models\Announcement::create([
-            'course_id' => $id,
-            'posted_by' => Auth::id(),
-            'title'     => request('title'),
-            'body'      => request('body'),
-        ]);
-        return redirect()->back()->with('success', 'Announcement posted.');
-    });
-
-    Route::post('/assignments/{assignmentId}/grade/{studentId}', function ($assignmentId, $studentId) {
-        \App\Models\Submission::updateOrCreate(
-            ['assignment_id' => $assignmentId, 'user_id' => $studentId],
-            ['grade' => request('grade'), 'feedback' => request('feedback')]
-        );
-        return redirect()->back()->with('success', 'Grade saved.');
-    });
-
-    Route::get('/inbox', function () use ($inboxData, $lecturerCoursesForUser) {
-        $courses = $lecturerCoursesForUser();
-        $inboxCourses = $courses;
-        $courseIds = $courses->pluck('id');
-
-        // Lecturers can message their students
-        $recipients = \App\Models\User::whereHas('enrollments', function ($q) use ($courseIds) {
-            $q->whereIn('course_id', $courseIds);
-        })->where('role', 'student')->get();
-
-        return view('pages.lecturer.inbox.index', array_merge($inboxData(), compact('courses', 'recipients', 'inboxCourses')));
-    });
-
-    Route::post('/inbox/reply', function () {
-        \App\Models\Message::create([
-            'sender_id'   => Auth::id(),
-            'receiver_id' => request('receiver_id'),
-            'course_id'   => request('course_id') ?: null,
-            'parent_id'   => request('parent_id'),
-            'subject'     => request('subject'),
-            'body'        => request('body'),
-        ]);
-        return redirect()->back();
-    });
-
-    Route::patch('/inbox/messages/{id}', function ($id) {
-        $message = \App\Models\Message::where('id', $id)
-            ->where('sender_id', Auth::id())
-            ->firstOrFail();
-        $message->update(['body' => request('body')]);
-        return response()->json(['success' => true]);
-    });
-
-    Route::delete('/inbox/messages/{id}', function ($id) {
-        $message = \App\Models\Message::where('id', $id)
-            ->where('sender_id', Auth::id())
-            ->firstOrFail();
-        $message->delete();
-        return response()->json(['success' => true]);
-    });
-
-    Route::get('/account', function () use ($lecturerCoursesForUser) {
-        $courses = $lecturerCoursesForUser();
-        return view('pages.lecturer.account.profile', compact('courses'));
-    });
-
-    Route::patch('/account', function () {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        $user->update([
-            'name'  => request('name'),
-            'email' => request('email'),
-            'bio'   => request('bio'),
-        ]);
-        return redirect()->back()->with('success', 'Profile updated successfully.');
-    });
-
-    Route::get('/account/password', function () use ($lecturerCoursesForUser) {
-        $courses = $lecturerCoursesForUser();
-        return view('pages.lecturer.account.password', compact('courses'));
-    });
-
-    Route::patch('/account/password', function () use ($passwordRules, $passwordMessages) {
-        request()->validate([
-            'current_password' => ['required'],
-            'password'         => $passwordRules(),
-        ], $passwordMessages);
-
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        if (!\Illuminate\Support\Facades\Hash::check(request('current_password'), $user->password)) {
-            return back()->withErrors(['current_password' => 'The current password is incorrect.']);
-        }
-        $user->update(['password' => \Illuminate\Support\Facades\Hash::make(request('password'))]);
-        return redirect()->back()->with('success', 'Password updated successfully.');
-    });
-
-    Route::get('/account/notifications', function () use ($lecturerCoursesForUser) {
-        $courses = $lecturerCoursesForUser();
-        return view('pages.lecturer.account.notifications', compact('courses'));
-    });
-
-    Route::get('/account/preferences', function () use ($lecturerCoursesForUser) {
-        $courses = $lecturerCoursesForUser();
-        return view('pages.lecturer.account.preferences', compact('courses'));
-    });
-
-    Route::get('/calendar', function () use ($lecturerCoursesForUser) {
-        $currentMonth = request('month')
-            ? \Carbon\Carbon::createFromFormat('Y-m', request('month'))->startOfMonth()
-            : \Carbon\Carbon::now()->startOfMonth();
-
-        $courses = $lecturerCoursesForUser();
-        $courseIds = $courses->pluck('id');
-
-        $events = \App\Models\Assignment::whereIn('course_id', $courseIds)
-            ->whereBetween('due_date', [$currentMonth->copy()->startOfMonth(), $currentMonth->copy()->endOfMonth()])
-            ->with('course')->get();
-
-        $upcoming = \App\Models\Assignment::whereIn('course_id', $courseIds)
-            ->where('due_date', '>=', now())
-            ->orderBy('due_date')
-            ->with('course')
-            ->take(5)
-            ->get();
-
-        return view('pages.lecturer.calendar.index', compact('currentMonth', 'events', 'upcoming', 'courses'));
-    });
-
-    Route::get('/help', function () use ($lecturerCoursesForUser) {
-        $courses = $lecturerCoursesForUser();
-        return view('pages.shared.help', compact('courses'));
-    });
-
+    Route::get('/help', HelpController::class);
 });
 
 /*
 |--------------------------------------------------------------------------
-| Breeze Auth Routes
+| Admin Routes
 |--------------------------------------------------------------------------
+| The only area that crosses departments. Course::scopeVisibleTo() returns
+| everything for an admin, so {course} bindings here need no special casing.
 */
+Route::middleware(['auth', 'admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+
+        Route::get('/dashboard', [Admin\DashboardController::class, 'index'])->name('dashboard');
+
+        // Account creation and user management.
+        Route::resource('users', Admin\UserController::class)->except(['show']);
+
+        Route::post('users/{user}/password', [Admin\UserController::class, 'resetPassword'])
+            ->name('users.password');
+
+        // Module management across both departments.
+        Route::resource('courses', Admin\CourseController::class);
+
+        // Roster management. scopeBindings() resolves {student} through
+        // Course::students(), so removing someone who is not enrolled 404s.
+        Route::scopeBindings()->group(function () {
+            Route::post('courses/{course}/students', [Admin\EnrollmentController::class, 'store'])
+                ->name('courses.students.store');
+
+            Route::delete('courses/{course}/students/{student}', [Admin\EnrollmentController::class, 'destroy'])
+                ->name('courses.students.destroy');
+        });
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Own account — all roles
+|--------------------------------------------------------------------------
+| Student, lecturer and admin each had their own near-identical pair of
+| profile/password closures, differing only in the view returned. The view
+| name is derivable from the role, so one controller serves all three; the
+| paths stay distinct because each sits behind its own role middleware.
+*/
+foreach ([
+    // hasInbox: admin has no inbox screen, so it gets no message endpoints.
+    ['prefix' => '', 'middleware' => ['auth', 'student'], 'name' => 'student.', 'hasInbox' => true],
+    ['prefix' => 'lecturer', 'middleware' => ['auth', 'lecturer'], 'name' => 'lecturer.', 'hasInbox' => true],
+    ['prefix' => 'admin', 'middleware' => ['auth', 'admin'], 'name' => 'admin.', 'hasInbox' => false],
+] as $area) {
+    Route::middleware($area['middleware'])
+        ->prefix($area['prefix'])
+        ->name($area['name'])
+        ->group(function () use ($area) {
+            Route::get('/account', [AccountController::class, 'edit'])->name('account');
+            Route::patch('/account', [AccountController::class, 'update']);
+
+            Route::get('/account/password', [AccountController::class, 'editPassword'])->name('account.password');
+            Route::patch('/account/password', [AccountController::class, 'updatePassword']);
+
+            if (! $area['hasInbox']) {
+                return;
+            }
+
+            // Sending, editing and deleting messages is identical for the two
+            // roles that have an inbox; only reading it differs.
+            Route::post('/inbox/reply', [MessageController::class, 'reply']);
+            Route::patch('/inbox/messages/{id}', [MessageController::class, 'update']);
+            Route::delete('/inbox/messages/{id}', [MessageController::class, 'destroy']);
+        });
+}
+
 require __DIR__.'/auth.php';

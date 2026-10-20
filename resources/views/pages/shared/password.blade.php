@@ -1,6 +1,6 @@
 {{-- SHARED PASSWORD PARTIAL --}}
 
-<div class="rounded-2xl bg-white shadow-sm overflow-hidden max-w-xl">
+<div class="rounded-2xl bg-white shadow-sm overflow-hidden max-w-2xl">
 
     {{-- HEADER --}}
     <div class="px-6 py-4 border-b border-[#C8D3E0] flex justify-between items-center">
@@ -35,7 +35,7 @@
 
     <form id="password-form"
           method="POST"
-          action="{{ Auth::user()->role === 'lecturer' ? '/lecturer/account/password' : '/account/password' }}">
+          action="{{ Auth::user()->accountPath() }}/password">
         @csrf
         @method('PATCH')
 

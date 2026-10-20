@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "nova-lms",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "concurrently",
+        "-c", "#93c5fd,#fdba74",
+        "--names", "server,vite",
+        "--kill-others",
+        "php artisan serve --port=8000",
+        "npm run dev"
+      ],
+      "port": 8000
+    }
+  ]
+}

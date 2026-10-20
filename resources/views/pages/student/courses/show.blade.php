@@ -212,14 +212,14 @@
         {{-- GRADES --}}
         @elseif($section === 'grades')
 
-            <div class="rounded-2xl bg-white border border-[#C8D3E0] overflow-hidden">
+            <div class="rounded-2xl bg-white border border-[#C8D3E0] overflow-x-auto">
 
                 <div class="px-6 py-4 border-b border-[#E8EEF4]">
                     <h3 class="text-base font-semibold text-slate-900">Grades</h3>
                     <p class="text-xs text-slate-400 mt-0.5">{{ $submissions->whereNotNull('grade')->count() }} of {{ $submissions->count() }} graded</p>
                 </div>
 
-                <div class="grid grid-cols-12 px-6 py-3 text-[10px] font-semibold text-slate-400 uppercase tracking-widest bg-[#E8EEF4] border-b border-[#C8D3E0]">
+                <div class="grid grid-cols-12 min-w-[620px] px-6 py-3 text-[10px] font-semibold text-slate-400 uppercase tracking-widest bg-[#E8EEF4] border-b border-[#C8D3E0]">
                     <div class="col-span-6">Assignment</div>
                     <div class="col-span-3">Grade</div>
                     <div class="col-span-3">Feedback</div>
@@ -227,7 +227,7 @@
 
                 <div class="divide-y divide-[#E8EEF4]">
                     @forelse($submissions as $submission)
-                        <div class="grid grid-cols-12 px-6 py-4 items-center text-sm hover:bg-[#E8EEF4] transition-colors">
+                        <div class="grid grid-cols-12 min-w-[620px] px-6 py-4 items-center text-sm hover:bg-[#E8EEF4] transition-colors">
                             <div class="col-span-6 font-medium text-slate-800">{{ $submission->assignment->title }}</div>
                             <div class="col-span-3">
                                 @if($submission->grade)

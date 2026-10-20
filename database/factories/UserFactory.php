@@ -30,6 +30,10 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+
+            // Mirrors the column default. Stated explicitly so a factory user
+            // is never silently role-less.
+            'role' => 'student',
         ];
     }
 
@@ -40,6 +44,33 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * An administrator — carries no department, by design.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'admin',
+            'department' => null,
+        ]);
+    }
+
+    public function lecturer(string $department = 'SPT'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'lecturer',
+            'department' => $department,
+        ]);
+    }
+
+    public function student(string $department = 'SPT'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'student',
+            'department' => $department,
         ]);
     }
 }

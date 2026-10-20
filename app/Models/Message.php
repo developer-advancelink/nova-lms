@@ -62,10 +62,15 @@ class Message extends Model
         return $query->whereNull('parent_id');
     }
 
-    // Scope — messages involving a user (sent or received)
+    // Scope — messages involving a user (sent or received).
+    // The grouping closure is required: without it the orWhere escapes any
+    // other constraint composed onto the query, which would turn a lookup like
+    // ->where('id', $x)->forUser($id) into "that id OR anything I received".
     public function scopeForUser($query, int $userId)
     {
-        return $query->where('sender_id', $userId)
-                     ->orWhere('receiver_id', $userId);
+        return $query->where(function ($q) use ($userId) {
+            $q->where('sender_id', $userId)
+              ->orWhere('receiver_id', $userId);
+        });
     }
 }

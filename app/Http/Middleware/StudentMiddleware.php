@@ -10,11 +10,23 @@ class StudentMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!Auth::check() || Auth::user()->role !== 'student') {
-            if (Auth::check() && Auth::user()->role === 'lecturer') {
-                return redirect('/lecturer/dashboard');
-            }
-            return redirect('/login');
+        if (! Auth::check()) {
+            return redirect()->guest(route('login'));
+        }
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if (! $user->isStudent()) {
+            // Previously this sent any non-student that wasn't a lecturer to
+            // /login while still authenticated, and `guest` sent them straight
+            // back — an admin could never load a page. homePath() covers every
+            // role, so there is no fall-through case now.
+            $target = $user->homePath();
+
+            abort_if($request->is(ltrim($target, '/')), 403);
+
+            return redirect($target);
         }
 
         return $next($request);

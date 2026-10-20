@@ -103,10 +103,10 @@
         <p x-show="starred.length > 0" x-cloak
            class="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-3">All Courses</p>
 
-        <div class="rounded-2xl bg-white border border-[#C8D3E0] overflow-hidden">
+        <div class="rounded-2xl bg-white border border-[#C8D3E0] overflow-x-auto">
 
             {{-- TABLE HEADER --}}
-            <div class="grid grid-cols-12 px-6 py-3 text-[10px] font-semibold text-slate-400 uppercase tracking-widest bg-[#E8EEF4] border-b border-[#C8D3E0]">
+            <div class="grid grid-cols-12 min-w-[620px] px-6 py-3 text-[10px] font-semibold text-slate-400 uppercase tracking-widest bg-[#E8EEF4] border-b border-[#C8D3E0]">
                 <div class="col-span-1"></div>
                 <div class="col-span-4">Course Name</div>
                 <div class="col-span-2">Code</div>
@@ -118,7 +118,7 @@
             <template x-if="all.length > 0">
                 <div class="divide-y divide-[#E8EEF4]">
                     <template x-for="e in all" :key="'row-' + e.id">
-                        <div class="grid grid-cols-12 px-6 py-4 items-center text-sm hover:bg-[#E8EEF4] transition-colors">
+                        <div class="grid grid-cols-12 min-w-[620px] px-6 py-4 items-center text-sm hover:bg-[#E8EEF4] transition-colors">
 
                             {{-- STAR TOGGLE --}}
                             <div class="col-span-1">

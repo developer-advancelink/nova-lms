@@ -125,7 +125,7 @@
                                      placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[#1B3A5C] focus:bg-white transition-all resize-none"></textarea>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-medium text-slate-600 mb-1.5">Start Date</label>
                         <input type="date" name="start_date" x-model="editCourseStart" required
@@ -383,7 +383,7 @@
         </div>
 
         {{-- ASSIGNMENTS TABLE --}}
-        <div class="rounded-2xl bg-white border border-[#C8D3E0] overflow-hidden">
+        <div class="rounded-2xl bg-white border border-[#C8D3E0] overflow-x-auto">
 
             <div class="px-6 py-4 border-b border-[#E8EEF4] flex items-center justify-between">
                 <div>
@@ -396,7 +396,7 @@
                 </button>
             </div>
 
-            <div class="grid grid-cols-12 px-6 py-3 text-[10px] font-semibold text-slate-400 uppercase tracking-widest bg-[#E8EEF4] border-b border-[#C8D3E0]">
+            <div class="grid grid-cols-12 min-w-[620px] px-6 py-3 text-[10px] font-semibold text-slate-400 uppercase tracking-widest bg-[#E8EEF4] border-b border-[#C8D3E0]">
                 <div class="col-span-4">Title</div>
                 <div class="col-span-2">Course</div>
                 <div class="col-span-2">Due Date</div>
@@ -415,7 +415,7 @@
                         $allDone   = $submitted >= $total && $total > 0;
                     @endphp
 
-                    <div class="grid grid-cols-12 px-6 py-4 items-center text-sm hover:bg-[#E8EEF4] transition-colors">
+                    <div class="grid grid-cols-12 min-w-[620px] px-6 py-4 items-center text-sm hover:bg-[#E8EEF4] transition-colors">
 
                         <div class="col-span-4">
                             <p class="font-medium {{ $isPast && !$isToday ? 'text-slate-400' : 'text-slate-900' }}">

@@ -19,7 +19,7 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->student('SPT')->create();
 
         $response = $this->post('/login', [
             'email' => $user->email,
@@ -27,7 +27,25 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+
+        // Login lands on the role's own dashboard, not a shared one.
+        $response->assertRedirect('/dashboard');
+    }
+
+    public function test_each_role_is_redirected_to_its_own_dashboard_on_login(): void
+    {
+        $cases = [
+            [User::factory()->admin()->create(), '/admin/dashboard'],
+            [User::factory()->lecturer('SPT')->create(), '/lecturer/dashboard'],
+            [User::factory()->student('PE')->create(), '/dashboard'],
+        ];
+
+        foreach ($cases as [$user, $expected]) {
+            $this->post('/login', ['email' => $user->email, 'password' => 'password'])
+                ->assertRedirect($expected);
+
+            $this->post('/logout');
+        }
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void

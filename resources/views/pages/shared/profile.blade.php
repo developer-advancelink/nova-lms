@@ -1,7 +1,14 @@
 {{-- SHARED PROFILE PARTIAL --}}
 @php
     $user = Auth::user();
-    $isAdmin = $user->role === 'admin';
+
+    // Staff/Student ID and Department are never editable on your OWN profile,
+    // whatever your role. They are set by an admin on /admin/users/{user}/edit,
+    // and an admin has no department of their own to edit anyway. This used to
+    // read `$user->role === 'admin'`, which was always false because no admin
+    // role existed; now that one does, keep the fields locked deliberately
+    // rather than offering an input the account endpoint silently ignores.
+    $isAdmin = false;
 
     $initials = function (?string $name) {
         $words = array_filter(preg_split('/\s+/', trim($name ?? '')));
@@ -52,7 +59,7 @@
 
     <form id="profile-form"
           method="POST"
-          action="{{ $user->role === 'lecturer' ? '/lecturer/account' : '/account' }}">
+          action="{{ $user->accountPath() }}">
         @csrf
         @method('PATCH')
 

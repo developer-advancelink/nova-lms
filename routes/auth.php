@@ -12,10 +12,17 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
-
-    Route::post('register', [RegisteredUserController::class, 'store']);
+    /*
+    | Self-registration is disabled. Accounts on NOVA are created by an
+    | administrator at /admin/users/create, which is the only place `role` and
+    | `department` can be set. The old POST /register created a user with
+    | neither, producing an account that could see no modules and appeared in
+    | no admin department filter. The register view was already a static
+    | "contact your administrator" card with no form.
+    |
+    | Route::get('register',  [RegisteredUserController::class, 'create'])->name('register');
+    | Route::post('register', [RegisteredUserController::class, 'store']);
+    */
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
